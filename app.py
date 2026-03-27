@@ -14,30 +14,30 @@ st.title("🌍 World Development Clustering Dashboard")
 df = pd.read_excel("World_development_mesurement.xlsx")
 
 # ----------------------------
-# 🔥 USE ALL FEATURES (IMPORTANT)
+# 🔥 AUTO-USE ALL NUMERIC FEATURES
 # ----------------------------
-features = [
-    'GDP',
-    'Birth Rate',
-    'CO2 Emissions',
-    'Days to Start Business',
-    'Ease of Business',
-    'Energy Usage',
-    'Health Exp % GDP',
-    'Health Exp/Capita'
-]
+# Drop non-numeric columns like Country
+numeric_df = df.select_dtypes(include=[np.number])
 
-# Clean data
-df = df.dropna(subset=features)
+# Store feature names
+features = numeric_df.columns.tolist()
 
-# Predict clusters
-scaled = scaler.transform(df[features])
+# Remove missing values
+numeric_df = numeric_df.dropna()
+
+# Keep same rows in original df
+df = df.loc[numeric_df.index]
+
+# ----------------------------
+# Prediction
+# ----------------------------
+scaled = scaler.transform(numeric_df)
 df['Cluster'] = model.predict(scaled)
 
 # ----------------------------
 # Sidebar
 # ----------------------------
-cluster = st.sidebar.selectbox("Select Cluster", sorted(df['Cluster'].unique()))
+cluster = st.sidebar.selectbox("Cluster", sorted(df['Cluster'].unique()))
 search = st.sidebar.text_input("Search Country")
 
 filtered = df[df['Cluster'] == cluster]
@@ -46,42 +46,37 @@ if search:
     filtered = filtered[filtered['Country'].str.contains(search, case=False, na=False)]
 
 # ----------------------------
-# Show only important columns
+# Show important columns only
 # ----------------------------
-st.subheader("📊 Filtered Data")
+st.subheader("📊 Data")
 
-st.dataframe(
-    filtered[['Country', 'GDP', 'Birth Rate', 'CO2 Emissions', 'Cluster']]
-)
+display_cols = ['Country', 'GDP', 'Birth Rate', 'CO2 Emissions', 'Cluster']
+display_cols = [col for col in display_cols if col in df.columns]
 
-# ----------------------------
-# Graphs (ONLY 3 FEATURES)
-# ----------------------------
-
-st.subheader("📈 GDP vs CO2")
-fig1 = px.scatter(df, x='GDP', y='CO2 Emissions',
-                  color=df['Cluster'].astype(str),
-                  hover_name='Country')
-st.plotly_chart(fig1)
-
-st.subheader("📉 Birth Rate vs GDP")
-fig2 = px.scatter(df, x='Birth Rate', y='GDP',
-                  color=df['Cluster'].astype(str),
-                  hover_name='Country')
-st.plotly_chart(fig2)
+st.dataframe(filtered[display_cols])
 
 # ----------------------------
-# Prediction (FULL FEATURES)
+# Graphs (only key features)
+# ----------------------------
+if all(col in df.columns for col in ['GDP', 'CO2 Emissions']):
+    fig = px.scatter(df, x='GDP', y='CO2 Emissions',
+                     color=df['Cluster'].astype(str),
+                     hover_name='Country')
+    st.plotly_chart(fig)
+
+# ----------------------------
+# Prediction (AUTO FEATURES)
 # ----------------------------
 st.subheader("🧠 Predict Cluster")
 
-inputs = []
+input_data = []
+
 for col in features:
-    val = st.number_input(f"Enter {col}")
-    inputs.append(val)
+    val = st.number_input(f"{col}", value=0.0)
+    input_data.append(val)
 
 if st.button("Predict"):
-    data = np.array([inputs])
+    data = np.array([input_data])
     scaled = scaler.transform(data)
     pred = model.predict(scaled)
     st.success(f"Cluster: {pred[0]}")
