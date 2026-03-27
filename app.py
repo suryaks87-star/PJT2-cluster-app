@@ -4,51 +4,76 @@ import numpy as np
 import plotly.express as px
 from pickle import load
 
-# Load model
+# ----------------------------
+# Load Model & Scaler
+# ----------------------------
 scaler = load(open('scaler2.pkl', 'rb'))
 model = load(open('kmeans2.pkl', 'rb'))
 
+st.set_page_config(page_title="Clustering App", layout="wide")
 st.title("🌍 World Development Clustering Dashboard")
 
-# Load data
+# ----------------------------
+# Load Dataset
+# ----------------------------
 df = pd.read_excel("World_development_mesurement.xlsx")
 
 # ----------------------------
-# 🔥 AUTO-USE ALL NUMERIC FEATURES
+# 🔥 GET EXACT FEATURES USED IN TRAINING
 # ----------------------------
-# Drop non-numeric columns like Country
-numeric_df = df.select_dtypes(include=[np.number])
-
-# Store feature names
-features = numeric_df.columns.tolist()
-
-# Remove missing values
-numeric_df = numeric_df.dropna()
-
-# Keep same rows in original df
-df = df.loc[numeric_df.index]
+try:
+    features = scaler.feature_names_in_.tolist()
+except:
+    st.error("❌ Model was trained without feature names. Please retrain model.")
+    st.stop()
 
 # ----------------------------
-# Prediction
+# Check Missing Columns
 # ----------------------------
-scaled = scaler.transform(numeric_df)
+missing_cols = [col for col in features if col not in df.columns]
+
+if missing_cols:
+    st.error(f"❌ Missing columns in dataset: {missing_cols}")
+    st.stop()
+
+# ----------------------------
+# Prepare Data
+# ----------------------------
+X = df[features]
+X = X.dropna()
+
+# Align dataframe
+df = df.loc[X.index]
+
+# ----------------------------
+# Predict Clusters
+# ----------------------------
+scaled = scaler.transform(X)
 df['Cluster'] = model.predict(scaled)
 
 # ----------------------------
-# Sidebar
+# Sidebar Filters
 # ----------------------------
-cluster = st.sidebar.selectbox("Cluster", sorted(df['Cluster'].unique()))
+st.sidebar.header("🔍 Filters")
+
+cluster = st.sidebar.selectbox(
+    "Select Cluster",
+    sorted(df['Cluster'].unique())
+)
+
 search = st.sidebar.text_input("Search Country")
 
 filtered = df[df['Cluster'] == cluster]
 
 if search:
-    filtered = filtered[filtered['Country'].str.contains(search, case=False, na=False)]
+    filtered = filtered[
+        filtered['Country'].str.contains(search, case=False, na=False)
+    ]
 
 # ----------------------------
-# Show important columns only
+# Show Data (Important columns only)
 # ----------------------------
-st.subheader("📊 Data")
+st.subheader("📊 Filtered Data")
 
 display_cols = ['Country', 'GDP', 'Birth Rate', 'CO2 Emissions', 'Cluster']
 display_cols = [col for col in display_cols if col in df.columns]
@@ -58,14 +83,32 @@ st.dataframe(filtered[display_cols])
 # ----------------------------
 # Graphs (only key features)
 # ----------------------------
+st.subheader("📈 GDP vs CO2 Emissions")
+
 if all(col in df.columns for col in ['GDP', 'CO2 Emissions']):
-    fig = px.scatter(df, x='GDP', y='CO2 Emissions',
-                     color=df['Cluster'].astype(str),
-                     hover_name='Country')
-    st.plotly_chart(fig)
+    fig1 = px.scatter(
+        df,
+        x='GDP',
+        y='CO2 Emissions',
+        color=df['Cluster'].astype(str),
+        hover_name='Country'
+    )
+    st.plotly_chart(fig1, use_container_width=True)
+
+st.subheader("📉 Birth Rate vs GDP")
+
+if all(col in df.columns for col in ['Birth Rate', 'GDP']):
+    fig2 = px.scatter(
+        df,
+        x='Birth Rate',
+        y='GDP',
+        color=df['Cluster'].astype(str),
+        hover_name='Country'
+    )
+    st.plotly_chart(fig2, use_container_width=True)
 
 # ----------------------------
-# Prediction (AUTO FEATURES)
+# Prediction Section
 # ----------------------------
 st.subheader("🧠 Predict Cluster")
 
@@ -79,4 +122,4 @@ if st.button("Predict"):
     data = np.array([input_data])
     scaled = scaler.transform(data)
     pred = model.predict(scaled)
-    st.success(f"Cluster: {pred[0]}")
+    st.success(f"Predicted Cluster: {pred[0]}")
