@@ -1,7 +1,4 @@
-#load model
-import joblib
-joblib.dump(model_pipeline, "sentiment_model.pkl")
-#code
+
 import streamlit as st
 import joblib
 
