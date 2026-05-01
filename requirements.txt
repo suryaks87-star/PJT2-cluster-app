@@ -1,6 +1,11 @@
-streamlit
 pandas
 numpy
-plotly
 scikit-learn
+matplotlib
+seaborn
+nltk
+textblob
+streamlit
+joblib
 openpyxl
+wordcloud
