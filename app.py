@@ -75,7 +75,34 @@ if uploaded_file is not None:
         ax2.set_title("Sentiment Distribution")
 
         st.pyplot(fig2)
+        #aspect based analysis
+from textblob import TextBlob
+import nltk
+nltk.download('punkt')
+from nltk.tokenize import sent_tokenize
 
+# 🔹 Aspects
+aspects = ['camera', 'battery', 'performance', 'display', 'wifi']
+
+# 🔹 ABSA function
+def aspect_sentiment(text, aspect):
+    sentences = sent_tokenize(str(text).lower())
+    
+    for sentence in sentences:
+        if aspect in sentence:
+            polarity = TextBlob(sentence).sentiment.polarity
+            
+            if polarity > 0:
+                return "Positive"
+            elif polarity < 0:
+                return "Negative"
+            else:
+                return "Neutral"
+    return None
+
+# 🔹 Create aspect sentiment columns
+for aspect in aspects:
+    df[aspect + '_sentiment'] = df['body'].apply(lambda x: aspect_sentiment(x, aspect))
     # 🔹 Aspect-Based Sentiment Heatmap
     aspects = ['camera', 'battery', 'performance', 'display', 'wifi']
 
