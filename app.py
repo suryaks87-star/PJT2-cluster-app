@@ -1,4 +1,3 @@
-pip install streamlit
 #load model
 import joblib
 joblib.dump(model_pipeline, "sentiment_model.pkl")
