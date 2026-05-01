@@ -78,7 +78,11 @@ if uploaded_file is not None:
         #aspect based analysis
 from textblob import TextBlob
 import nltk
-nltk.download('punkt')
+
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
 from nltk.tokenize import sent_tokenize
 
 # 🔹 Aspects
