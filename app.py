@@ -17,7 +17,7 @@ st.markdown("<h1 style='text-align: center; color: #4CAF50;'>📊 Sentiment Anal
 # -----------------------------
 @st.cache_resource
 def load_model():
-    return joblib.load("sentiment_model.pkl")
+    return joblib.load("sentiment_model2.pkl")
 
 model = None
 try:
